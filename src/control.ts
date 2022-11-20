@@ -78,7 +78,10 @@ class BasicCharacterControllerInput {
 
 export default class Character_control {
   input: BasicCharacterControllerInput;
-  character: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>;
+  character: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial> & {
+    touching?: boolean;
+    direction?: THREE.Vector3 | null;
+  };
   control: OrbitControls;
   currentPosition: THREE.Vector3;
   camera: THREE.PerspectiveCamera;
@@ -127,6 +130,15 @@ export default class Character_control {
       this.velocityY -= GRAVITY * deltaT;
       if (!this.airDirection) this.airDirection = direction;
 
+      if (
+        this.input.keys.backward ||
+        this.input.keys.forward ||
+        this.input.keys.left ||
+        this.input.keys.right
+      ) {
+        this.airDirection = direction;
+      }
+
       if (this.character.position.y <= 0) {
         this.airDirection = null;
         this.velocityY = 0;
@@ -157,6 +169,15 @@ export default class Character_control {
     }
 
     // this.character.rotation.setFromVector3(direction.normalize());
+
+    if (this.character.direction) {
+      console.log(
+        "🚀 ~ file: control.ts ~ line 174 ~ Character_control ~ updateNewPosition ~ this.character.direction",
+        this.character.direction.angleTo(direction)
+      );
+
+      // console.log(direction.normalize());
+    }
 
     this.character.position
       .add(new THREE.Vector3(direction.x, 0, direction.z))

@@ -22,8 +22,14 @@ class Game {
   clock: THREE.Clock;
   pointer = new THREE.Vector2();
   raycaster = new THREE.Raycaster();
-  character: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhongMaterial>;
+  character: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhongMaterial> & {
+    touching?: boolean;
+    direction?: THREE.Vector3 | null;
+  };
   newUpdatePosition: THREE.Vector3 | null;
+  characterBB: THREE.Box3;
+  wallBB: THREE.Box3;
+  wall: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhongMaterial>;
 
   constructor() {
     this.initialize();
@@ -76,7 +82,11 @@ class Game {
     wall.receiveShadow = true;
 
     wall.position.set(0, 3, -20);
+    this.wall = wall;
     this.scene.add(wall);
+
+    this.wallBB = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+    this.wallBB.setFromObject(wall);
 
     const cube = new THREE.Mesh(
       new THREE.BoxGeometry(4, 4, 4),
@@ -86,6 +96,20 @@ class Game {
     cube.castShadow = true;
     cube.receiveShadow = true;
     this.character = cube;
+
+    Object.defineProperties(this.character, {
+      touching: {
+        value: false,
+        writable: true,
+      },
+      direction: {
+        value: null,
+        writable: true,
+      },
+    });
+
+    this.characterBB = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+    this.characterBB.setFromObject(cube);
 
     window.addEventListener(
       "pointermove",
@@ -161,10 +185,31 @@ class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  checkCollisions() {
+    if (this.characterBB.intersectsBox(this.wallBB)) {
+      this.character.touching = true;
+      const vectorDirection = new THREE.Vector3()
+        .subVectors(this.wall.position, this.character.position)
+        .normalize();
+      this.character.direction = vectorDirection;
+
+      return;
+    }
+    this.character.touching = false;
+    this.character.direction = null;
+  }
+
   gameloop(t: number) {
     requestAnimationFrame((t) => {
       this.gameloop(t);
     });
+
+    this.characterBB
+      //@ts-ignore
+      .copy(this.character.geometry.boundingBox)
+      .applyMatrix4(this.character.matrixWorld);
+
+    this.checkCollisions();
 
     if (this.newUpdatePosition) {
       this.character.position.lerp(
