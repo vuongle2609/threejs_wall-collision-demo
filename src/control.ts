@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GRAVITY, JUMP_FORCE, SPEED } from "./configs/constants";
-
+import * as toastr from "toastr";
 class BasicCharacterControllerInput {
   keys: {
     forward: boolean;
@@ -168,15 +168,26 @@ export default class Character_control {
       );
     }
 
-    // this.character.rotation.setFromVector3(direction.normalize());
+    if (this.character.touching) {
+      const toastOptions: any = {
+        closeButton: false,
+        debug: false,
+        newestOnTop: true,
+        progressBar: false,
+        positionClass: "toast-bottom-right",
+        preventDuplicates: true,
+        onclick: null,
+        showDuration: "100",
+        hideDuration: "100",
+        timeOut: "1000",
+        extendedTimeOut: "100",
+        showEasing: "swing",
+        hideEasing: "linear",
+        showMethod: "fadeIn",
+        hideMethod: "fadeOut",
+      };
 
-    if (this.character.direction) {
-      console.log(
-        "🚀 ~ file: control.ts ~ line 174 ~ Character_control ~ updateNewPosition ~ this.character.direction",
-        this.character.direction.angleTo(direction)
-      );
-
-      // console.log(direction.normalize());
+      toastr.error("Wall collide", "", toastOptions);
     }
 
     this.character.position

@@ -1,14 +1,13 @@
-import { GUI } from "dat.gui";
 import * as THREE from "three";
-
-import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
-import { ASPECT, FAR, FOV, NEAR } from "./configs/constants";
+import "toastr/build/toastr.min.css";
 import Camera_movement from "./camera.js";
+import { ASPECT, FAR, FOV, NEAR } from "./configs/constants";
 import Character_control from "./control";
 import Light from "./light";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { isPositionEquals } from "./utils";
+import * as toastr from "toastr";
 
 class Game {
   renderer: THREE.WebGLRenderer;
@@ -37,7 +36,6 @@ class Game {
 
   initialize() {
     // const gui = new GUI();
-
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
@@ -137,16 +135,14 @@ class Game {
     this.camera_movement = new Camera_movement(cube, this.camera);
 
     this.stats = Stats();
-    document.body.appendChild(this.stats.dom);
+    // fps show
+    // document.body.appendChild(this.stats.dom);
 
     this.clock = new THREE.Clock();
     this.gameloop(0);
   }
 
   onPointerMove(event: PointerEvent) {
-    // calculate pointer position in normalized device coordinates
-    // (-1 to +1) for both components
-
     this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -169,6 +165,27 @@ class Game {
       clickedCube.castShadow = true;
       clickedCube.receiveShadow = true;
       clickedCube.position.set(sannha?.point.x, -1, sannha?.point.z);
+
+      const toastOptions: any = {
+        closeButton: false,
+        debug: false,
+        newestOnTop: false,
+        progressBar: false,
+        positionClass: "toast-bottom-right",
+        preventDuplicates: false,
+        onclick: null,
+        showDuration: "100",
+        hideDuration: "100",
+        timeOut: "1000",
+        extendedTimeOut: "100",
+        showEasing: "swing",
+        hideEasing: "linear",
+        showMethod: "fadeIn",
+        hideMethod: "fadeOut",
+      };
+
+      toastr.success("Raycast", "", toastOptions);
+
       this.scene.add(clickedCube);
     }
 

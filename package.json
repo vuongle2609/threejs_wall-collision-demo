@@ -10,12 +10,13 @@
   },
   "dependencies": {
     "dat.gui": "^0.7.9",
-    "three": "^0.146.0"
+    "toastr": "^2.1.4"
   },
   "devDependencies": {
     "@types/dat.gui": "^0.7.7",
     "@types/three": "^0.146.0",
-    "cannon-es": "^0.20.0",
+    "@types/toastr": "^2.1.40",
+    "three": "^0.146.0",
     "typescript": "^4.6.4",
     "vite": "^3.2.3"
   }
