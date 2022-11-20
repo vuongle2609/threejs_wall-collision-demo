@@ -12,4 +12,4 @@ export const FAR = 500;
 export const CAMERA_HEIGHT_FROM_CHARACTER = 100;
 export const CAMERA_FAR_FROM_CHARACTER = CAMERA_HEIGHT_FROM_CHARACTER * 1.36;
 export const CAMERA_ROTATION = -0.6;
-export const CAMERA_LERP_ALPHA = 0.2;
+export const CAMERA_LERP_ALPHA = 0.05;

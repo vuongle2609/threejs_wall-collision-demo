@@ -8,6 +8,7 @@ import Camera_movement from "./camera.js";
 import Character_control from "./control";
 import Light from "./light";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { isPositionEquals } from "./utils";
 
 class Game {
   renderer: THREE.WebGLRenderer;
@@ -19,6 +20,10 @@ class Game {
   camera_movement: Camera_movement;
   lastTime: number;
   clock: THREE.Clock;
+  pointer = new THREE.Vector2();
+  raycaster = new THREE.Raycaster();
+  character: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhongMaterial>;
+  newUpdatePosition: THREE.Vector3 | null;
 
   constructor() {
     this.initialize();
@@ -52,12 +57,13 @@ class Game {
     new Light(this.scene);
 
     const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(800, 800),
+      new THREE.PlaneGeometry(120, 120),
       new THREE.MeshPhongMaterial({ color: 0xfebe8c })
     );
     plane.rotation.set(-Math.PI / 2, 0, 0);
     plane.position.set(0, -2, 0);
     plane.receiveShadow = true;
+    plane.name = "sannha";
 
     this.scene.add(plane);
 
@@ -79,6 +85,23 @@ class Game {
 
     cube.castShadow = true;
     cube.receiveShadow = true;
+    this.character = cube;
+
+    window.addEventListener(
+      "pointermove",
+      (e) => {
+        this.onPointerMove(e);
+      },
+      false
+    );
+
+    window.addEventListener(
+      "click",
+      (e) => {
+        this.onPointerClick(e);
+      },
+      false
+    );
 
     this.scene.add(cube);
 
@@ -96,6 +119,42 @@ class Game {
     this.gameloop(0);
   }
 
+  onPointerMove(event: PointerEvent) {
+    // calculate pointer position in normalized device coordinates
+    // (-1 to +1) for both components
+
+    this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+  }
+
+  onPointerClick(event: MouseEvent) {
+    const intersects = this.raycaster.intersectObjects(
+      this.scene.children,
+      true
+    );
+
+    const sannha = intersects.find((item) => item.object.name == "sannha");
+
+    if (sannha) {
+      const clickedCube = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 2, 0.3),
+        new THREE.MeshPhongMaterial({ color: 0xa0e4cb })
+      );
+      clickedCube.castShadow = true;
+      clickedCube.receiveShadow = true;
+      clickedCube.position.set(sannha?.point.x, -1, sannha?.point.z);
+      this.scene.add(clickedCube);
+    }
+
+    const newPosition = sannha
+      ? new THREE.Vector3(sannha.point.x, sannha.point.y, sannha.point.z)
+      : null;
+
+    this.newUpdatePosition = newPosition;
+  }
+
   onWindowResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
@@ -106,6 +165,27 @@ class Game {
     requestAnimationFrame((t) => {
       this.gameloop(t);
     });
+
+    if (this.newUpdatePosition) {
+      this.character.position.lerp(
+        new THREE.Vector3(
+          this.newUpdatePosition.x,
+          0,
+          this.newUpdatePosition.z
+        ),
+        0.1
+      );
+    }
+
+    if (
+      isPositionEquals(this.character.position, this.newUpdatePosition, {
+        x: true,
+        y: false,
+        z: true,
+      })
+    ) {
+      this.newUpdatePosition = null;
+    }
 
     const deltaT = this.clock.getDelta();
 

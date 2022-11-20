@@ -140,6 +140,10 @@ export default class Character_control {
       this.isJump = true;
     }
 
+    if (this.character.position.y >= 0 && !this.isJump) {
+      this.isJump = true;
+    }
+
     gravityVector.y += this.velocityY * deltaT;
     // giu huong nhay khi dang nhay khi tha phim di chuyen
     if (this.airDirection) {

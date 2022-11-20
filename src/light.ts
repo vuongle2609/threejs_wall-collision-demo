@@ -11,7 +11,7 @@ export default class Light {
   initial() {
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 
-    directionalLight.position.set(100, 50, 100);
+    directionalLight.position.set(100, 200, 100);
     directionalLight.target.position.set(0, 0, 0);
     directionalLight.castShadow = true;
     directionalLight.shadow.bias = -0.001;
@@ -21,10 +21,10 @@ export default class Light {
     directionalLight.shadow.camera.far = 1000.0;
     directionalLight.shadow.camera.near = 0.5;
     directionalLight.shadow.camera.far = 500.0;
-    directionalLight.shadow.camera.left = 100;
-    directionalLight.shadow.camera.right = -100;
-    directionalLight.shadow.camera.top = 100;
-    directionalLight.shadow.camera.bottom = -100;
+    directionalLight.shadow.camera.left = 200;
+    directionalLight.shadow.camera.right = -200;
+    directionalLight.shadow.camera.top = 200;
+    directionalLight.shadow.camera.bottom = -200;
 
     this.scene.add(directionalLight);
 
