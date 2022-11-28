@@ -62,7 +62,7 @@ class Game {
 
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(120, 120),
-      new THREE.MeshPhongMaterial({ color: 0xfebe8c })
+      new THREE.MeshPhongMaterial({ color: 0xffe9b1 })
     );
     plane.rotation.set(-Math.PI / 2, 0, 0);
     plane.position.set(0, -2, 0);
@@ -72,7 +72,7 @@ class Game {
     this.scene.add(plane);
 
     const wall = new THREE.Mesh(
-      new THREE.BoxGeometry(50, 10, 1),
+      new THREE.BoxGeometry(200, 10, 1),
       new THREE.MeshPhongMaterial({ color: 0xfffbc1 })
     );
 
@@ -84,7 +84,10 @@ class Game {
     this.scene.add(wall);
 
     this.wallBB = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-    this.wallBB.setFromObject(wall);
+    this.wallBB.setFromObject(wall).expandByScalar(1.2);
+    const helper = new THREE.Box3Helper(this.wallBB, new THREE.Color("red"));
+    this.scene.add(helper);
+    // this.wallBB.setFromCenterAndSize()
 
     const cube = new THREE.Mesh(
       new THREE.BoxGeometry(4, 4, 4),
@@ -94,6 +97,18 @@ class Game {
     cube.castShadow = true;
     cube.receiveShadow = true;
     this.character = cube;
+
+    // const dir = new THREE.Vector3(0, 0, 1);
+
+    // //normalize the direction vector (convert to vector of length 1)
+    // dir.normalize();
+
+    // const origin = new THREE.Vector3(0, 0, 0);
+    // const length = 10;
+    // const hex = 0xffff00;
+
+    // const arrowHelper = new THREE.ArrowHelper(dir, origin, length, hex);
+    // this.scene.add(arrowHelper);
 
     Object.defineProperties(this.character, {
       touching: {
@@ -120,7 +135,7 @@ class Game {
     window.addEventListener(
       "click",
       (e) => {
-        this.onPointerClick(e);
+        // this.onPointerClick(e);
       },
       false
     );

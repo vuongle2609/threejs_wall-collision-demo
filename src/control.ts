@@ -190,8 +190,29 @@ export default class Character_control {
       toastr.error("Wall collide", "", toastOptions);
     }
 
+    let moveVector = new THREE.Vector3(direction.x, 0, direction.z);
+
+    if (this.character.touching) {
+      const wallVector = new THREE.Vector3(0, 0, -0.5);
+      const dotWallPlayer = new THREE.Vector3()
+        .copy(moveVector)
+        .dot(wallVector);
+      console.table({
+        dotWallPlayer,
+        moveVector: `${moveVector.x},${moveVector.y},${moveVector.z}`,
+        wallVector: `${wallVector.x},${wallVector.y},${wallVector.z}`,
+      });
+
+      const newMoveVector = new THREE.Vector3().subVectors(
+        moveVector,
+        wallVector.addScalar(dotWallPlayer)
+      );
+
+      moveVector = new THREE.Vector3(newMoveVector.x, 0, newMoveVector.z);
+    }
+
     this.character.position
-      .add(new THREE.Vector3(direction.x, 0, direction.z))
+      .add(new THREE.Vector3(moveVector.x, 0, moveVector.z))
       .add(gravityVector);
   }
 
