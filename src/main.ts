@@ -3,11 +3,12 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import "toastr/build/toastr.min.css";
 import Camera_movement from "./camera.js";
-import { ASPECT, FAR, FOV, NEAR } from "./configs/constants";
+import { ASPECT, FAR, FOV, NEAR, SPEED } from "./configs/constants";
 import Character_control from "./control";
 import Light from "./light";
 import { isPositionEquals } from "./utils";
 import * as toastr from "toastr";
+import { GUI } from "dat.gui";
 class Game {
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
@@ -34,7 +35,7 @@ class Game {
   }
 
   initialize() {
-    // const gui = new GUI();
+    const gui = new GUI();
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
@@ -76,7 +77,7 @@ class Game {
     );
 
     const positionAttribute = wall.geometry.getAttribute("position");
-    console.log(positionAttribute.array);
+
     positionAttribute.needsUpdate = true;
 
     wall.castShadow = true;
@@ -100,17 +101,21 @@ class Game {
     cube.castShadow = true;
     cube.receiveShadow = true;
     this.character = cube;
-    // const dir = new THREE.Vector3(0, 0, 1);
+    const dir = new THREE.Vector3(
+      this.wall.position.x,
+      0,
+      this.wall.position.z
+    );
 
-    // //normalize the direction vector (convert to vector of length 1)
-    // dir.normalize();
+    //normalize the direction vector (convert to vector of length 1)
+    dir.normalize();
 
-    // const origin = new THREE.Vector3(0, 0, 0);
-    // const length = 10;
-    // const hex = 0xffff00;
+    const origin = new THREE.Vector3(0, 0, 0);
+    const length = 10;
+    const hex = 0xffff00;
 
-    // const arrowHelper = new THREE.ArrowHelper(dir, origin, length, hex);
-    // this.scene.add(arrowHelper);
+    const arrowHelper = new THREE.ArrowHelper(dir, origin, length, hex);
+    this.scene.add(arrowHelper);
 
     Object.defineProperties(this.character, {
       touching: {
@@ -245,6 +250,9 @@ class Game {
     });
 
     this.checkCollisions();
+    this.characterBB
+      .setFromObject(this.character)
+      .expandByVector(new THREE.Vector3(1, 0, 1).multiplyScalar(SPEED));
 
     // if (this.newUpdatePosition) {
     //   this.character.position.lerp(
@@ -273,8 +281,6 @@ class Game {
     this.character_control.update(deltaT);
     this.stats.update();
     this.camera_movement.update();
-
-    this.characterBB.setFromObject(this.character);
   }
 }
 

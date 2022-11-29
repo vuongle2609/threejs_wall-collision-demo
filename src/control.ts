@@ -107,6 +107,7 @@ export default class Character_control {
   }
 
   updateNewPosition(deltaT: number) {
+    // vector chi huong di chuyen
     const direction = new Vector3().copy(this.currentPosition);
 
     const frontVector = new Vector3(
@@ -121,10 +122,7 @@ export default class Character_control {
       0
     );
 
-    direction
-      .subVectors(frontVector, sideVector)
-      .normalize()
-      .multiplyScalar(SPEED);
+    direction.subVectors(frontVector, sideVector);
 
     this.currentPosition.copy(this.character.position);
 
@@ -137,19 +135,13 @@ export default class Character_control {
       const wallVector = new Vector3(0, 0, 1).normalize();
 
       const moveVectorCopy = new Vector3()
-        .copy(
-          new Vector3(
-            this.airDirection?.x && !moveVector.x
-              ? this.airDirection.x
-              : moveVector.x,
-            0,
-            this.airDirection?.z && !moveVector.z
-              ? this.airDirection.z
-              : moveVector.z
-          )
-        )
+        .copy(new Vector3(moveVector.x, 0, moveVector.z))
         .normalize();
 
+      // - khi dang dam vao tuong se chi cho phep
+      // lui ra sau hoac cheo ve dang sau
+      // - goc giua vector cua tuong va vector di chuyen
+      // lon hon 1 co nghia la dang huong ve tuong =))
       if (wallVector.angleTo(moveVectorCopy) > 1) {
         const dotWallPlayer = new Vector3()
           .copy(moveVectorCopy)
@@ -167,24 +159,10 @@ export default class Character_control {
         );
 
         moveVector = new Vector3(newMoveVector.x, 0, newMoveVector.z);
-        // if (Object.values(this.input.keys).find((item) => item)) {
-        // console.log("----------------------------------");
-        // console.log("wall vector -----------", wallVector);
-        // console.log("move vector -----------", moveVectorCopy);
-        // console.log("dot vector -----------", dotWallPlayer);
-        // console.log("wallVectorScalar -----------", wallVectorScalar);
-        // console.log("sub vector -----------", newMoveVector);
-
-        // console.log(
-        //   "test sub ",
-        //   moveVectorCopy.z,
-        //   wallVectorScalar.z,
-        //   moveVectorCopy.z - wallVectorScalar.z
-        // );
-        // console.log("move - ", moveVector);
-        // }
       }
     }
+
+    moveVector.normalize().multiplyScalar(SPEED);
 
     if (this.isJump) {
       this.velocityY -= GRAVITY * deltaT;
