@@ -8,7 +8,6 @@ import Character_control from "./control";
 import Light from "./light";
 import { isPositionEquals } from "./utils";
 import * as toastr from "toastr";
-
 class Game {
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
@@ -56,7 +55,7 @@ class Game {
     this.camera = new THREE.PerspectiveCamera(FOV, ASPECT, NEAR, FAR);
 
     this.control = new OrbitControls(this.camera, this.renderer.domElement);
-    this.control.dispose();
+    // this.control.dispose();
 
     new Light(this.scene);
 
@@ -72,22 +71,26 @@ class Game {
     this.scene.add(plane);
 
     const wall = new THREE.Mesh(
-      new THREE.BoxGeometry(200, 10, 1),
+      new THREE.BoxGeometry(40, 10, 4),
       new THREE.MeshPhongMaterial({ color: 0xfffbc1 })
     );
+
+    const positionAttribute = wall.geometry.getAttribute("position");
+    console.log(positionAttribute.array);
+    positionAttribute.needsUpdate = true;
 
     wall.castShadow = true;
     wall.receiveShadow = true;
 
     wall.position.set(0, 3, -20);
     this.wall = wall;
+
     this.scene.add(wall);
 
     this.wallBB = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-    this.wallBB.setFromObject(wall).expandByScalar(1.2);
+    this.wallBB.setFromObject(wall);
     const helper = new THREE.Box3Helper(this.wallBB, new THREE.Color("red"));
     this.scene.add(helper);
-    // this.wallBB.setFromCenterAndSize()
 
     const cube = new THREE.Mesh(
       new THREE.BoxGeometry(4, 4, 4),
@@ -97,7 +100,6 @@ class Game {
     cube.castShadow = true;
     cube.receiveShadow = true;
     this.character = cube;
-
     // const dir = new THREE.Vector3(0, 0, 1);
 
     // //normalize the direction vector (convert to vector of length 1)
@@ -123,6 +125,11 @@ class Game {
 
     this.characterBB = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
     this.characterBB.setFromObject(cube);
+    const helper1 = new THREE.Box3Helper(
+      this.characterBB,
+      new THREE.Color("blue")
+    );
+    this.scene.add(helper1);
 
     window.addEventListener(
       "pointermove",
@@ -145,7 +152,8 @@ class Game {
     this.character_control = new Character_control(
       cube,
       this.control,
-      this.camera
+      this.camera,
+      this.scene
     );
     this.camera_movement = new Camera_movement(cube, this.camera);
 
@@ -236,23 +244,18 @@ class Game {
       this.gameloop(t);
     });
 
-    this.characterBB
-      //@ts-ignore
-      .copy(this.character.geometry.boundingBox)
-      .applyMatrix4(this.character.matrixWorld);
-
     this.checkCollisions();
 
-    if (this.newUpdatePosition) {
-      this.character.position.lerp(
-        new THREE.Vector3(
-          this.newUpdatePosition.x,
-          0,
-          this.newUpdatePosition.z
-        ),
-        0.1
-      );
-    }
+    // if (this.newUpdatePosition) {
+    //   this.character.position.lerp(
+    //     new THREE.Vector3(
+    //       this.newUpdatePosition.x,
+    //       0,
+    //       this.newUpdatePosition.z
+    //     ),
+    //     0.1
+    //   );
+    // }
 
     if (
       isPositionEquals(this.character.position, this.newUpdatePosition, {
@@ -270,6 +273,8 @@ class Game {
     this.character_control.update(deltaT);
     this.stats.update();
     this.camera_movement.update();
+
+    this.characterBB.setFromObject(this.character);
   }
 }
 

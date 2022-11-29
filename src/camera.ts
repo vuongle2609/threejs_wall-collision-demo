@@ -19,6 +19,12 @@ export default class Camera_movement {
     this.camera = camera;
 
     this.camera.rotation.set(CAMERA_ROTATION, 0, 0);
+
+    this.camera.position.set(
+        this.character.position.x,
+        this.character.position.y + CAMERA_HEIGHT_FROM_CHARACTER,
+        this.character.position.z + CAMERA_FAR_FROM_CHARACTER
+    );
   }
 
   updateNewPosition() {
@@ -33,6 +39,6 @@ export default class Camera_movement {
   }
 
   update() {
-    this.updateNewPosition();
+    // this.updateNewPosition();
   }
 }

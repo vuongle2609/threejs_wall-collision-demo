@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GRAVITY, JUMP_FORCE, SPEED } from "./configs/constants";
 import * as toastr from "toastr";
+import { Vector3 } from "three";
 class BasicCharacterControllerInput {
   keys: {
     forward: boolean;
@@ -80,38 +81,41 @@ export default class Character_control {
   input: BasicCharacterControllerInput;
   character: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial> & {
     touching?: boolean;
-    direction?: THREE.Vector3 | null;
+    direction?: Vector3 | null;
   };
   control: OrbitControls;
-  currentPosition: THREE.Vector3;
+  currentPosition: Vector3;
   camera: THREE.PerspectiveCamera;
   isJump: boolean;
   velocityY: number = 0;
-  airDirection: THREE.Vector3 | null;
+  airDirection: Vector3 | null;
+  scene: THREE.Scene;
 
   constructor(
     character: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>,
     control: OrbitControls,
-    camera: THREE.PerspectiveCamera
+    camera: THREE.PerspectiveCamera,
+    scene: THREE.Scene
   ) {
+    this.scene = scene;
     this.camera = camera;
     this.input = new BasicCharacterControllerInput();
     this.control = control;
     this.character = character;
 
-    this.currentPosition = new THREE.Vector3();
+    this.currentPosition = new Vector3();
   }
 
   updateNewPosition(deltaT: number) {
-    const direction = new THREE.Vector3().copy(this.currentPosition);
+    const direction = new Vector3().copy(this.currentPosition);
 
-    const frontVector = new THREE.Vector3(
+    const frontVector = new Vector3(
       0,
       0,
       (this.input.keys.backward ? 1 : 0) - (this.input.keys.forward ? 1 : 0)
     );
 
-    const sideVector = new THREE.Vector3(
+    const sideVector = new Vector3(
       (this.input.keys.left ? 1 : 0) - (this.input.keys.right ? 1 : 0),
       0,
       0
@@ -124,19 +128,76 @@ export default class Character_control {
 
     this.currentPosition.copy(this.character.position);
 
-    let gravityVector = new THREE.Vector3(0, 0, 0);
+    let gravityVector = new Vector3(0, 0, 0);
+
+    let moveVector = new Vector3(direction.x, 0, direction.z);
+
+    if (this.character.touching) {
+      // vector tu tuong chi vuong goc ve huong character
+      const wallVector = new Vector3(0, 0, 1).normalize();
+
+      const moveVectorCopy = new Vector3()
+        .copy(
+          new Vector3(
+            this.airDirection?.x && !moveVector.x
+              ? this.airDirection.x
+              : moveVector.x,
+            0,
+            this.airDirection?.z && !moveVector.z
+              ? this.airDirection.z
+              : moveVector.z
+          )
+        )
+        .normalize();
+
+      if (wallVector.angleTo(moveVectorCopy) > 1) {
+        const dotWallPlayer = new Vector3()
+          .copy(moveVectorCopy)
+          .dot(wallVector);
+
+        const wallVectorScalar = new Vector3(
+          wallVector.x * dotWallPlayer,
+          wallVector.y * dotWallPlayer,
+          wallVector.z * dotWallPlayer
+        );
+
+        const newMoveVector = new Vector3().subVectors(
+          moveVectorCopy,
+          wallVectorScalar
+        );
+
+        moveVector = new Vector3(newMoveVector.x, 0, newMoveVector.z);
+        // if (Object.values(this.input.keys).find((item) => item)) {
+        // console.log("----------------------------------");
+        // console.log("wall vector -----------", wallVector);
+        // console.log("move vector -----------", moveVectorCopy);
+        // console.log("dot vector -----------", dotWallPlayer);
+        // console.log("wallVectorScalar -----------", wallVectorScalar);
+        // console.log("sub vector -----------", newMoveVector);
+
+        // console.log(
+        //   "test sub ",
+        //   moveVectorCopy.z,
+        //   wallVectorScalar.z,
+        //   moveVectorCopy.z - wallVectorScalar.z
+        // );
+        // console.log("move - ", moveVector);
+        // }
+      }
+    }
 
     if (this.isJump) {
       this.velocityY -= GRAVITY * deltaT;
-      if (!this.airDirection) this.airDirection = direction;
 
       if (
+        !this.airDirection ||
+        this.character.touching ||
         this.input.keys.backward ||
         this.input.keys.forward ||
         this.input.keys.left ||
         this.input.keys.right
       ) {
-        this.airDirection = direction;
+        this.airDirection = moveVector;
       }
 
       if (this.character.position.y <= 0) {
@@ -160,59 +221,16 @@ export default class Character_control {
     // giu huong nhay khi dang nhay khi tha phim di chuyen
     if (this.airDirection) {
       gravityVector.add(
-        new THREE.Vector3(
-          direction.x ? 0 : this.airDirection.x,
+        new Vector3(
+          moveVector.x ? 0 : this.airDirection.x,
           this.airDirection.y,
-          direction.z ? 0 : this.airDirection.z
+          moveVector.z ? 0 : this.airDirection.z
         )
       );
     }
 
-    if (this.character.touching) {
-      const toastOptions: any = {
-        closeButton: false,
-        debug: false,
-        newestOnTop: true,
-        progressBar: false,
-        positionClass: "toast-bottom-right",
-        preventDuplicates: true,
-        onclick: null,
-        showDuration: "100",
-        hideDuration: "100",
-        timeOut: "1000",
-        extendedTimeOut: "100",
-        showEasing: "swing",
-        hideEasing: "linear",
-        showMethod: "fadeIn",
-        hideMethod: "fadeOut",
-      };
-
-      toastr.error("Wall collide", "", toastOptions);
-    }
-
-    let moveVector = new THREE.Vector3(direction.x, 0, direction.z);
-
-    if (this.character.touching) {
-      const wallVector = new THREE.Vector3(0, 0, -0.5);
-      const dotWallPlayer = new THREE.Vector3()
-        .copy(moveVector)
-        .dot(wallVector);
-      console.table({
-        dotWallPlayer,
-        moveVector: `${moveVector.x},${moveVector.y},${moveVector.z}`,
-        wallVector: `${wallVector.x},${wallVector.y},${wallVector.z}`,
-      });
-
-      const newMoveVector = new THREE.Vector3().subVectors(
-        moveVector,
-        wallVector.addScalar(dotWallPlayer)
-      );
-
-      moveVector = new THREE.Vector3(newMoveVector.x, 0, newMoveVector.z);
-    }
-
     this.character.position
-      .add(new THREE.Vector3(moveVector.x, 0, moveVector.z))
+      .add(new Vector3(moveVector.x, 0, moveVector.z))
       .add(gravityVector);
   }
 
