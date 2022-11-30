@@ -1,6 +1,6 @@
 // character
 // no more than 4
-export const SPEED = 1;
+export const SPEED = 0.25;
 export const GRAVITY = 63;
 export const JUMP_FORCE = 25;
 // export const JUMP_FORCE = 25;

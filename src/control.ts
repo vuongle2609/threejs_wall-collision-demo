@@ -130,12 +130,23 @@ export default class Character_control {
 
     let moveVector = new Vector3(direction.x, 0, direction.z);
 
-    if (this.character.touching) {
-      // vector tu tuong chi vuong goc ve huong character
-      const wallVector = new Vector3(0, 0, 1).normalize();
+    if (this.character.touching && this.character.direction) {
+      // vector normal của mặt intersect với mặt
+      // của character
+      const wallVector = this.character.direction.normalize();
 
       const moveVectorCopy = new Vector3()
-        .copy(new Vector3(moveVector.x, 0, moveVector.z))
+        .copy(
+          new Vector3(
+            this.airDirection?.x && !moveVector.x
+              ? this.airDirection.x
+              : moveVector.x,
+            0,
+            this.airDirection?.z && !moveVector.z
+              ? this.airDirection.z
+              : moveVector.z
+          )
+        )
         .normalize();
 
       // - khi dang dam vao tuong se chi cho phep

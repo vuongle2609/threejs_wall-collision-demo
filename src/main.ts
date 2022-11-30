@@ -27,15 +27,14 @@ class Game {
   };
   newUpdatePosition: THREE.Vector3 | null;
   characterBB: THREE.Box3;
-  wallBB: THREE.Box3;
-  wall: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhongMaterial>;
+  wallsBB: THREE.Box3[] = [];
 
   constructor() {
     this.initialize();
   }
 
   initialize() {
-    const gui = new GUI();
+    // const gui = new GUI();
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
@@ -56,7 +55,7 @@ class Game {
     this.camera = new THREE.PerspectiveCamera(FOV, ASPECT, NEAR, FAR);
 
     this.control = new OrbitControls(this.camera, this.renderer.domElement);
-    // this.control.dispose();
+    this.control.dispose();
 
     new Light(this.scene);
 
@@ -71,27 +70,61 @@ class Game {
 
     this.scene.add(plane);
 
-    const wall = new THREE.Mesh(
-      new THREE.BoxGeometry(40, 10, 4),
-      new THREE.MeshPhongMaterial({ color: 0xfffbc1 })
-    );
+    const wallsArray = [
+      {
+        position: [0, 3, -20],
+        size: [40, 10, 2],
+        rotation: [0, 0, 0],
+      },
+      {
+        position: [-20, 3, 0],
+        size: [30, 10, 2],
+        rotation: [0, 0, 0],
+      },
+      {
+        position: [-40, 3, -20],
+        size: [2, 20, 40],
+        rotation: [0, 0, 0],
+      },
+      {
+        position: [40, 3, -20],
+        size: [2, 10, 40],
+        rotation: [0, 0, 0],
+      },
+      {
+        position: [30, 3, 20],
+        size: [2, 10, 40],
+        rotation: [0, 0, 0],
+      },
+      {
+        position: [10, 3, 20],
+        size: [2, 40, 10],
+        rotation: [0, 0, 0],
+      },
+    ];
 
-    const positionAttribute = wall.geometry.getAttribute("position");
+    wallsArray.forEach(({ position, size, rotation }) => {
+      const wall = new THREE.Mesh(
+        new THREE.BoxGeometry(size[0], size[1], size[2]),
+        new THREE.MeshPhongMaterial({ color: 0xfffbc1 })
+      );
 
-    positionAttribute.needsUpdate = true;
+      wall.castShadow = true;
+      wall.receiveShadow = true;
 
-    wall.castShadow = true;
-    wall.receiveShadow = true;
+      wall.rotation.set(rotation[0], rotation[1], rotation[2]);
+      wall.position.set(position[0], position[1], position[2]);
 
-    wall.position.set(0, 3, -20);
-    this.wall = wall;
+      this.scene.add(wall);
 
-    this.scene.add(wall);
+      const wallBB = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+      wallBB.setFromObject(wall);
 
-    this.wallBB = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-    this.wallBB.setFromObject(wall);
-    const helper = new THREE.Box3Helper(this.wallBB, new THREE.Color("red"));
-    this.scene.add(helper);
+      this.wallsBB.push(wallBB);
+
+      const helper = new THREE.Box3Helper(wallBB, new THREE.Color("red"));
+      this.scene.add(helper);
+    });
 
     const cube = new THREE.Mesh(
       new THREE.BoxGeometry(4, 4, 4),
@@ -101,21 +134,6 @@ class Game {
     cube.castShadow = true;
     cube.receiveShadow = true;
     this.character = cube;
-    const dir = new THREE.Vector3(
-      this.wall.position.x,
-      0,
-      this.wall.position.z
-    );
-
-    //normalize the direction vector (convert to vector of length 1)
-    dir.normalize();
-
-    const origin = new THREE.Vector3(0, 0, 0);
-    const length = 10;
-    const hex = 0xffff00;
-
-    const arrowHelper = new THREE.ArrowHelper(dir, origin, length, hex);
-    this.scene.add(arrowHelper);
 
     Object.defineProperties(this.character, {
       touching: {
@@ -130,11 +148,11 @@ class Game {
 
     this.characterBB = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
     this.characterBB.setFromObject(cube);
-    const helper1 = new THREE.Box3Helper(
-      this.characterBB,
-      new THREE.Color("blue")
-    );
-    this.scene.add(helper1);
+    // const helper1 = new THREE.Box3Helper(
+    //   this.characterBB,
+    //   new THREE.Color("blue")
+    // );
+    // this.scene.add(helper1);
 
     window.addEventListener(
       "pointermove",
@@ -164,7 +182,7 @@ class Game {
 
     this.stats = Stats();
     // fps show
-    // document.body.appendChild(this.stats.dom);
+    document.body.appendChild(this.stats.dom);
 
     this.clock = new THREE.Clock();
     this.gameloop(0);
@@ -230,18 +248,123 @@ class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  checkCollisions() {
-    if (this.characterBB.intersectsBox(this.wallBB)) {
-      this.character.touching = true;
-      const vectorDirection = new THREE.Vector3()
-        .subVectors(this.wall.position, this.character.position)
-        .normalize();
-      this.character.direction = vectorDirection;
+  isBeetwen(
+    objectLimit: { max: THREE.Vector3; min: THREE.Vector3 },
+    objectCompare: {
+      max: THREE.Vector3;
+      min: THREE.Vector3;
+    },
+    fieldCompare: "x" | "y" | "z",
+    numberRound?: "floor" | "ceil"
+  ) {
+    const limitMin = Math[numberRound || "floor"](
+      objectLimit.min[fieldCompare]
+    );
+    const limitMax = Math[numberRound || "floor"](
+      objectLimit.max[fieldCompare]
+    );
 
-      return;
+    const compareMin = Math[numberRound || "floor"](
+      objectCompare.min[fieldCompare]
+    );
+    const compareMax = Math[numberRound || "floor"](
+      objectCompare.max[fieldCompare]
+    );
+    if (
+      (limitMin < compareMin && limitMax > compareMin) ||
+      (limitMin < compareMax && limitMax > compareMax)
+    )
+      return true;
+
+    if (
+      (compareMin < limitMin && compareMax > limitMin) ||
+      (compareMin < limitMax && compareMax > limitMax)
+    )
+      return true;
+
+    return false;
+  }
+
+  isMoreThan(
+    objectLimit: { max: THREE.Vector3; min: THREE.Vector3 },
+    objectCompare: {
+      max: THREE.Vector3;
+      min: THREE.Vector3;
+    },
+    fieldCompare: "x" | "y" | "z"
+  ) {
+    if (
+      objectLimit.min[fieldCompare] > objectCompare.min[fieldCompare] &&
+      objectLimit.max[fieldCompare] > objectCompare.max[fieldCompare]
+    ) {
+      return true;
     }
-    this.character.touching = false;
-    this.character.direction = null;
+
+    return false;
+  }
+
+  checkCollisions() {
+    let touching = false;
+    let direction = null;
+
+    this.wallsBB.forEach((item) => {
+      if (this.characterBB.intersectsBox(item)) {
+        touching = true;
+
+        if (
+          this.isBeetwen(
+            { max: item.max, min: item.min },
+            { max: this.characterBB.max, min: this.characterBB.min },
+            "x"
+          ) &&
+          this.isBeetwen(
+            { max: item.max, min: item.min },
+            { max: this.characterBB.max, min: this.characterBB.min },
+            "x",
+            "ceil"
+          )
+        ) {
+          if (
+            this.isMoreThan(
+              { max: item.max, min: item.min },
+              { max: this.characterBB.max, min: this.characterBB.min },
+              "z"
+            )
+          ) {
+            direction = new THREE.Vector3(0, 0, -1);
+            return;
+          } else {
+            direction = new THREE.Vector3(0, 0, 1);
+            return;
+          }
+        }
+
+        if (
+          this.isBeetwen(
+            { max: item.max, min: item.min },
+            { max: this.characterBB.max, min: this.characterBB.min },
+            "z"
+          )
+        ) {
+          if (
+            this.isMoreThan(
+              { max: item.max, min: item.min },
+              { max: this.characterBB.max, min: this.characterBB.min },
+              "x"
+            )
+          ) {
+            direction = new THREE.Vector3(-1, 0, 0);
+            return;
+          } else {
+            direction = new THREE.Vector3(1, 0, 0);
+            return;
+          }
+        }
+      }
+    });
+
+    this.character.touching = touching;
+    this.character.direction = direction;
   }
 
   gameloop(t: number) {
