@@ -6,9 +6,6 @@ import Camera_movement from "./camera.js";
 import { ASPECT, FAR, FOV, NEAR, SPEED } from "./configs/constants";
 import Character_control from "./control";
 import Light from "./light";
-import { isPositionEquals } from "./utils";
-import * as toastr from "toastr";
-import { GUI } from "dat.gui";
 class Game {
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
@@ -19,13 +16,10 @@ class Game {
   camera_movement: Camera_movement;
   lastTime: number;
   clock: THREE.Clock;
-  pointer = new THREE.Vector2();
-  raycaster = new THREE.Raycaster();
   character: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhongMaterial> & {
     touching?: boolean;
     direction?: THREE.Vector3 | null;
   };
-  newUpdatePosition: THREE.Vector3 | null;
   characterBB: THREE.Box3;
   wallsBB: THREE.Box3[] = [];
 
@@ -34,7 +28,6 @@ class Game {
   }
 
   initialize() {
-    // const gui = new GUI();
     this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
@@ -50,7 +43,7 @@ class Game {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color("#DEF5E5");
-    // this.scene.add(new THREE.AxesHelper(200));
+    this.scene.add(new THREE.AxesHelper(200));
 
     this.camera = new THREE.PerspectiveCamera(FOV, ASPECT, NEAR, FAR);
 
@@ -66,8 +59,6 @@ class Game {
     plane.rotation.set(-Math.PI / 2, 0, 0);
     plane.position.set(0, -2, 0);
     plane.receiveShadow = true;
-    plane.name = "sannha";
-
     this.scene.add(plane);
 
     const wallsArray = [
@@ -121,9 +112,6 @@ class Game {
       wallBB.setFromObject(wall);
 
       this.wallsBB.push(wallBB);
-
-      const helper = new THREE.Box3Helper(wallBB, new THREE.Color("red"));
-      this.scene.add(helper);
     });
 
     const cube = new THREE.Mesh(
@@ -148,28 +136,6 @@ class Game {
 
     this.characterBB = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
     this.characterBB.setFromObject(cube);
-    // const helper1 = new THREE.Box3Helper(
-    //   this.characterBB,
-    //   new THREE.Color("blue")
-    // );
-    // this.scene.add(helper1);
-
-    window.addEventListener(
-      "pointermove",
-      (e) => {
-        this.onPointerMove(e);
-      },
-      false
-    );
-
-    window.addEventListener(
-      "click",
-      (e) => {
-        // this.onPointerClick(e);
-      },
-      false
-    );
-
     this.scene.add(cube);
 
     this.character_control = new Character_control(
@@ -188,67 +154,13 @@ class Game {
     this.gameloop(0);
   }
 
-  onPointerMove(event: PointerEvent) {
-    this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    this.pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-  }
-
-  onPointerClick(event: MouseEvent) {
-    const intersects = this.raycaster.intersectObjects(
-      this.scene.children,
-      true
-    );
-
-    const sannha = intersects.find((item) => item.object.name == "sannha");
-
-    if (sannha) {
-      const clickedCube = new THREE.Mesh(
-        new THREE.BoxGeometry(0.3, 2, 0.3),
-        new THREE.MeshPhongMaterial({ color: 0xa0e4cb })
-      );
-      clickedCube.castShadow = true;
-      clickedCube.receiveShadow = true;
-      clickedCube.position.set(sannha?.point.x, -1, sannha?.point.z);
-
-      const toastOptions: any = {
-        closeButton: false,
-        debug: false,
-        newestOnTop: false,
-        progressBar: false,
-        positionClass: "toast-bottom-right",
-        preventDuplicates: false,
-        onclick: null,
-        showDuration: "100",
-        hideDuration: "100",
-        timeOut: "1000",
-        extendedTimeOut: "100",
-        showEasing: "swing",
-        hideEasing: "linear",
-        showMethod: "fadeIn",
-        hideMethod: "fadeOut",
-      };
-
-      toastr.success("Raycast", "", toastOptions);
-
-      this.scene.add(clickedCube);
-    }
-
-    const newPosition = sannha
-      ? new THREE.Vector3(sannha.point.x, sannha.point.y, sannha.point.z)
-      : null;
-
-    this.newUpdatePosition = newPosition;
-  }
-
   onWindowResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  isBeetwen(
+  isBetween(
     objectLimit: { max: THREE.Vector3; min: THREE.Vector3 },
     objectCompare: {
       max: THREE.Vector3;
@@ -311,13 +223,14 @@ class Game {
       if (this.characterBB.intersectsBox(item)) {
         touching = true;
 
+        //get normal vector at intersect face
         if (
-          this.isBeetwen(
+          this.isBetween(
             { max: item.max, min: item.min },
             { max: this.characterBB.max, min: this.characterBB.min },
             "x"
           ) &&
-          this.isBeetwen(
+          this.isBetween(
             { max: item.max, min: item.min },
             { max: this.characterBB.max, min: this.characterBB.min },
             "x",
@@ -340,7 +253,7 @@ class Game {
         }
 
         if (
-          this.isBeetwen(
+          this.isBetween(
             { max: item.max, min: item.min },
             { max: this.characterBB.max, min: this.characterBB.min },
             "z"
@@ -376,27 +289,6 @@ class Game {
     this.characterBB
       .setFromObject(this.character)
       .expandByVector(new THREE.Vector3(1, 0, 1).multiplyScalar(SPEED));
-
-    // if (this.newUpdatePosition) {
-    //   this.character.position.lerp(
-    //     new THREE.Vector3(
-    //       this.newUpdatePosition.x,
-    //       0,
-    //       this.newUpdatePosition.z
-    //     ),
-    //     0.1
-    //   );
-    // }
-
-    if (
-      isPositionEquals(this.character.position, this.newUpdatePosition, {
-        x: true,
-        y: false,
-        z: true,
-      })
-    ) {
-      this.newUpdatePosition = null;
-    }
 
     const deltaT = this.clock.getDelta();
 

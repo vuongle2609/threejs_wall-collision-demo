@@ -1,8 +1,7 @@
 import * as THREE from "three";
+import { Vector3 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GRAVITY, JUMP_FORCE, SPEED } from "./configs/constants";
-import * as toastr from "toastr";
-import { Vector3 } from "three";
 class BasicCharacterControllerInput {
   keys: {
     forward: boolean;
@@ -131,8 +130,6 @@ export default class Character_control {
     let moveVector = new Vector3(direction.x, 0, direction.z);
 
     if (this.character.touching && this.character.direction) {
-      // vector normal của mặt intersect với mặt
-      // của character
       const wallVector = this.character.direction.normalize();
 
       const moveVectorCopy = new Vector3()
@@ -149,10 +146,6 @@ export default class Character_control {
         )
         .normalize();
 
-      // - khi dang dam vao tuong se chi cho phep
-      // lui ra sau hoac cheo ve dang sau
-      // - goc giua vector cua tuong va vector di chuyen
-      // lon hon 1 co nghia la dang huong ve tuong =))
       if (wallVector.angleTo(moveVectorCopy) > 1) {
         const dotWallPlayer = new Vector3()
           .copy(moveVectorCopy)
@@ -207,7 +200,7 @@ export default class Character_control {
     }
 
     gravityVector.y += this.velocityY * deltaT;
-    // giu huong nhay khi dang nhay khi tha phim di chuyen
+
     if (this.airDirection) {
       gravityVector.add(
         new Vector3(
